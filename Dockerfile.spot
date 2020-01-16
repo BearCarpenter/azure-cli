@@ -9,6 +9,14 @@
 
 ARG PYTHON_VERSION="3.6.4"
 
+FROM ubuntu:xenial
+#install python
+RUN apt-get update \
+  && apt-get install -y python3-pip python3-dev \
+  && cd /usr/local/bin \
+  && ln -s /usr/bin/python3 python \
+  && pip3 install --upgrade pip
+
 FROM python:$PYTHON_VERSION
 
 RUN apt-get install -y ca-certificates curl openssl git \
@@ -47,5 +55,62 @@ RUN /bin/bash -c 'TMP_PKG_DIR=$(mktemp -d); \
 WORKDIR /
 
 RUN rm -rf azure-cli
+
+### install brew
+
+WORKDIR /brew
+
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends software-properties-common \
+#	&& add-apt-repository -y ppa:git-core/ppa \
+	&& apt-get update \
+	&& apt-get install -y --no-install-recommends \
+#		bzip2 \
+#		ca-certificates \
+#		curl \
+#		file \
+#		fonts-dejavu-core \
+#		g++ \
+#		libz-dev \
+		locales \
+#		make \
+#		openssh-client \
+#		patch \
+#		sudo \
+#		uuid-runtime \
+#		tzdata \
+	&& rm -rf /var/lib/apt/lists/*
+
+
+RUN apt-get -y update 
+RUN apt-get -y install build-essential curl file git
+RUN localedef -i en_US -f UTF-8 en_US.UTF-8 \
+	&& useradd -m -s /bin/bash linuxbrew \
+	&& echo 'linuxbrew ALL=(ALL) NOPASSWD:ALL' >>/etc/sudoers
+
+USER linuxbrew
+
+RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/Linuxbrew/install/master/install.sh)"
+
+USER root
+#RUN echo "export PATH=/usr/local/bin:$PATH" >> ~/.bash_profile
+
+RUN echo "a" && test -d ~/.linuxbrew && eval $(~/.linuxbrew/bin/brew shellenv) || true \
+ && echo "b" && test -d /home/linuxbrew/.linuxbrew && eval $(/home/linuxbrew/.linuxbrew/bin/brew shellenv) || true \
+ && echo "c" && test -r ~/.bash_profile && echo "eval \$($(brew --prefix)/bin/brew shellenv)" >>~/.bash_profile || true \
+ && echo "d" && echo "eval \$($(brew --prefix)/bin/brew shellenv)" >>~/.profile || true 
+
+ENV PATH=/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:$PATH \
+	SHELL=/bin/bash
+
+
+# install kubectl
+RUN az aks install-cli
+
+### install k9s
+RUN brew install derailed/k9s/k9s
+
+### install helm
+RUN brew install helm
 
 CMD bash
