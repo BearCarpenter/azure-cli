@@ -73,7 +73,7 @@ RUN apt-get update \
 #		g++ \
 #		libz-dev \
 		locales \
-#		make \
+		make \
 #		openssh-client \
 #		patch \
 #		sudo \
